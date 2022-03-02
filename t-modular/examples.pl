@@ -210,7 +210,7 @@ test(expr1_ssu, [nondet]) :-
     assertion(Size == 7),
     assertion(Code == [push(a), push(b), plus, push(c), push(d), plus, plus]).
 
-pred_info(p, 2, [dcg]). % For test ssu1
+user:pred_info(p, 2, [dcg]). % For test ssu1
 
 test(ssu1,
      [Expansion =@=
@@ -220,7 +220,7 @@ test(ssu1,
      )]) :-
     expand_term((p(b, X) ==>> {X=2}), Expansion).
 
-pred_info(p2, 2, [dcg]). % FOr test ssu_guard
+user:pred_info(p2, 2, [dcg]). % For test ssu_guard
 
 test(ssu2_guard,
      [Expansion =@=
