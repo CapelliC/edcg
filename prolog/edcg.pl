@@ -16,6 +16,7 @@
 :- use_module(library(debug), [debug/3]).
 :- use_module(library(lists), [member/2]).
 
+/*
 % These predicates define extra arguments and are defined in the
 % modules that use the edcg module.
 :- multifile
@@ -24,8 +25,14 @@
     pred_info/3,
     pass_info/1,
     pass_info/2.
-
-
+*/
+% attempt to define a somewhat more flexible (backward compatible) module resolution
+% after this modification it's not more *necessary* to declare :- multifile acc_info etc...
+info_available(M:PI) :-
+  prolog_load_context(module,C),
+  member(M,[C,edcg,user]),
+  current_predicate(M:PI), !.
+  
 % True if the module being read has opted-in to EDCG macro expansion.
 wants_edcg_expansion :-
     prolog_load_context(module, Module),
@@ -319,10 +326,14 @@ term_expansion_(H, B, TH, TB, NewAcc) :-
 % Give a list of G's hidden parameters:
 '_has_hidden'(G, GList) :-
     functor(G, GName, GArity),
-    pred_info(GName, GArity, GList).
+    info_available(M:pred_info/3),
+    M:pred_info(GName, GArity, GList) % . else commit to empty, ok?
+    -> true ; GList=[].
+/*
 '_has_hidden'(G, []) :-
     functor(G, GName, GArity),
     \+pred_info(GName, GArity, _).
+*/
 
 % Succeeds if A is an accumulator:
 '_is_acc'(A)  :- atomic(A), !, '_acc_info'(A, _, _, _, _, _, _).
@@ -343,9 +354,11 @@ term_expansion_(H, B, TH, TB, NewAcc) :-
 
 % Isolate the internal database from the user database:
 '_acc_info'(Acc, Term, Left, Right, Joiner, LStart, RStart) :-
-    acc_info(Acc, Term, Left, Right, Joiner, LStart, RStart).
+    info_available(M:acc_info/7),
+    M:acc_info(Acc, Term, Left, Right, Joiner, LStart, RStart).
 '_acc_info'(Acc, Term, Left, Right, Joiner, _, _) :-
-    acc_info(Acc, Term, Left, Right, Joiner).
+    info_available(M:acc_info/5),
+    M:acc_info(Acc, Term, Left, Right, Joiner).
 '_acc_info'(dcg, Term, Left, Right, Left=[Term|Right], _, []).
 
 % Get initial value for the passed argument:
@@ -355,9 +368,11 @@ term_expansion_(H, B, TH, TB, NewAcc) :-
     '_is_pass'(Pass), !,
     arg(1, PassParam, PStart).
 '_pass_info'(Pass, PStart) :-
-    pass_info(Pass, PStart).
+    info_available(M:pass_info/2),
+    M:pass_info(Pass, PStart).
 '_pass_info'(Pass, _) :-
-    pass_info(Pass).
+    info_available(M:pass_info/1),
+    M:pass_info(Pass).
 
 % Calculate the joiner for an accumulator A:
 '_joiner'([], _, _, true, Acc, Acc).
